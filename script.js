@@ -67,6 +67,19 @@ async function askNova(mode, message) {
   return data;
 }
 
+function pollinationsImageUrl(prompt) {
+  const fullPrompt = `high quality detailed image, ${prompt}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
+}
+
+function appendGeneratedImage(panel, prompt, base64Image) {
+  const image = document.createElement("img");
+  image.alt = prompt;
+  image.src = base64Image ? `data:image/png;base64,${base64Image}` : pollinationsImageUrl(prompt);
+  image.className = "generated-image";
+  panel.append(image);
+}
+
 function homeReply(text) {
   const lower = text.toLowerCase();
   const hasAny = (words) => words.some((word) => new RegExp(`\\b${word}\\b`, "i").test(lower));
@@ -204,17 +217,18 @@ document.querySelectorAll(".chat-form").forEach((form) => {
         const data = await askNova(type, text);
         setPanelResult(`${type}-output`, toolNames[type] || "NOVA AI", data.reply);
 
-        if (type === "image" && data.image) {
+        if (type === "image") {
           const panel = document.getElementById("image-output");
-          const image = document.createElement("img");
-          image.alt = text;
-          image.src = `data:image/png;base64,${data.image}`;
-          image.className = "generated-image";
-          panel.append(image);
+          appendGeneratedImage(panel, text, data.image);
         }
       } catch (error) {
         const reply = buildToolReply(type, text);
         setPanelResult(`${type}-output`, reply.title, `${reply.text}\n\nSetup note: ${error.message}`);
+
+        if (type === "image") {
+          const panel = document.getElementById("image-output");
+          appendGeneratedImage(panel, text);
+        }
       }
     }
 
