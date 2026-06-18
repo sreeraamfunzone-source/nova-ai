@@ -53,32 +53,92 @@ function extractImage(data) {
   return null;
 }
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return json(405, { error: "Use POST." });
+function extractGeminiText(data) {
+  const parts = [];
+  for (const candidate of data.candidates || []) {
+    for (const part of candidate.content?.parts || []) {
+      if (part.text) parts.push(part.text);
+    }
+  }
+  return parts.join("\n").trim();
+}
+
+async function askGemini(mode, message, instructions) {
+  const model = process.env.GEMINI_MODEL || "gemini-3.5-flash";
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": process.env.GEMINI_API_KEY,
+      },
+      body: JSON.stringify({
+        system_instruction: {
+          parts: [{ text: instructions }],
+        },
+        contents: [
+          {
+            parts: [{ text: message }],
+          },
+        ],
+      }),
+    },
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || "Gemini API request failed.");
   }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return json(500, {
-      error: "NOVA AI is not connected yet. Add OPENAI_API_KEY in your hosting environment variables.",
-    });
+  const imageNote =
+    mode === "image"
+      ? "\n\nNote: This free Gemini setup creates a strong image prompt. Direct image generation can be added later with an image model/provider."
+      : "";
+
+  return {
+    reply: `${extractGeminiText(data) || "NOVA AI finished, but no text response was returned."}${imageNote}`,
+    image: null,
+  };
+}
+
+async function askGroq(message, instructions) {
+  const model = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [
+        {
+          role: "system",
+          content: instructions,
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || "Groq API request failed.");
   }
 
-  let payload;
-  try {
-    payload = JSON.parse(event.body || "{}");
-  } catch {
-    return json(400, { error: "Invalid JSON." });
-  }
+  return {
+    reply: data.choices?.[0]?.message?.content?.trim() || "NOVA AI finished, but no text response was returned.",
+    image: null,
+  };
+}
 
-  const message = String(payload.message || "").trim();
-  const mode = String(payload.mode || "home");
-
-  if (!message) {
-    return json(400, { error: "Message is required." });
-  }
-
-  const instructions = MODE_INSTRUCTIONS[mode] || MODE_INSTRUCTIONS.home;
+async function askOpenAI(mode, message, instructions) {
   const body = {
     model: process.env.OPENAI_MODEL || "gpt-5.5",
     input: [
@@ -97,31 +157,68 @@ exports.handler = async (event) => {
     body.tools = [{ type: "image_generation" }];
   }
 
-  try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || "OpenAI API request failed.");
+  }
+
+  return {
+    reply: extractText(data) || "NOVA AI finished, but no text response was returned.",
+    image: extractImage(data),
+  };
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") {
+    return json(405, { error: "Use POST." });
+  }
+
+  if (!process.env.GROQ_API_KEY && !process.env.GEMINI_API_KEY && !process.env.OPENAI_API_KEY) {
+    return json(500, {
+      error: "NOVA AI is not connected yet. Add GROQ_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY in your hosting environment variables.",
     });
+  }
 
-    const data = await response.json();
+  let payload;
+  try {
+    payload = JSON.parse(event.body || "{}");
+  } catch {
+    return json(400, { error: "Invalid JSON." });
+  }
 
-    if (!response.ok) {
-      return json(response.status, {
-        error: data.error?.message || "OpenAI API request failed.",
-      });
+  const message = String(payload.message || "").trim();
+  const mode = String(payload.mode || "home");
+
+  if (!message) {
+    return json(400, { error: "Message is required." });
+  }
+
+  const instructions = MODE_INSTRUCTIONS[mode] || MODE_INSTRUCTIONS.home;
+
+  try {
+    let result;
+    if (process.env.GROQ_API_KEY) {
+      result = await askGroq(message, instructions);
+    } else if (process.env.GEMINI_API_KEY) {
+      result = await askGemini(mode, message, instructions);
+    } else {
+      result = await askOpenAI(mode, message, instructions);
     }
 
-    return json(200, {
-      reply: extractText(data) || "NOVA AI finished, but no text response was returned.",
-      image: extractImage(data),
-    });
-  } catch {
+    return json(200, result);
+  } catch (error) {
     return json(500, {
-      error: "NOVA AI could not reach the OpenAI API. Check hosting, internet, and API key setup.",
+      error: error.message || "NOVA AI could not reach the AI API. Check hosting, internet, and API key setup.",
     });
   }
 };
