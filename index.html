@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NOVA AI</title>
+    <meta
+      name="description"
+      content="NOVA AI is a multi-tool AI assistant for chat, image ideas, math help, code building, exam solutions, passwords, and guidance."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="NOVA AI tools">
+        <a class="brand" href="#home" aria-label="NOVA AI home">
+          <span class="brand-mark">N</span>
+          <span>
+            <strong>NOVA AI</strong>
+            <small>Study. Build. Create.</small>
+          </span>
+        </a>
+
+        <nav class="tool-nav" aria-label="Main tools">
+          <button class="tool-button active" data-page="home">Chat</button>
+          <button class="tool-button" data-page="image">AI Image Generator</button>
+          <button class="tool-button" data-page="math">Complex Math Solver</button>
+          <button class="tool-button" data-page="code">Code Builder</button>
+          <button class="tool-button" data-page="exam">IIT / NEET Sums Help</button>
+          <button class="tool-button" data-page="password">Password Generator</button>
+          <button class="tool-button" data-page="guide">Guide</button>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <section class="page active" id="home-page" data-page-panel="home">
+          <div class="center-stage">
+            <p class="eyebrow">NOVA AI</p>
+            <h1>How can I help you?</h1>
+            <div class="chat-window" id="home-messages" aria-live="polite">
+              <article class="message assistant">
+                <p>
+                  Ask me something casual, simple, creative, or study related. For advanced math, IIT, or NEET work, I will guide you to the right tool.
+                </p>
+              </article>
+            </div>
+            <form class="chat-form" data-chat="home">
+              <input
+                type="text"
+                name="message"
+                autocomplete="off"
+                placeholder="Message NOVA AI..."
+                aria-label="Message NOVA AI"
+              />
+              <button type="submit">Send</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="image-page" data-page-panel="image">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Create visuals</p>
+              <h2>AI Image Generator</h2>
+              <p>Describe the picture you want. NOVA will turn your idea into a clear image prompt.</p>
+            </header>
+            <div class="output-panel" id="image-output">
+              <span>Image prompt results will appear here.</span>
+            </div>
+            <form class="chat-form bottom" data-chat="image">
+              <input type="text" name="message" autocomplete="off" placeholder="Describe your image..." />
+              <button type="submit">Generate</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="math-page" data-page-panel="math">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Step-by-step solving</p>
+              <h2>Complex Math Solver</h2>
+              <p>Use this for algebra, trigonometry, story sums, calculus basics, and medium to above-average questions.</p>
+            </header>
+            <div class="output-panel" id="math-output">
+              <span>Math solutions will appear here.</span>
+            </div>
+            <form class="chat-form bottom" data-chat="math">
+              <input type="text" name="message" autocomplete="off" placeholder="Enter your math question..." />
+              <button type="submit">Solve</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="code-page" data-page-panel="code">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Build software</p>
+              <h2>Code Builder</h2>
+              <p>Ask for websites, apps, scripts, bug fixes, or complete code structures.</p>
+            </header>
+            <pre class="code-output" id="code-output"><code>// Your generated code will appear here.</code></pre>
+            <form class="chat-form bottom" data-chat="code">
+              <input type="text" name="message" autocomplete="off" placeholder="Tell NOVA what code to build..." />
+              <button type="submit">Build</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="exam-page" data-page-panel="exam">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Entrance exam help</p>
+              <h2>IIT / NEET Sums Help</h2>
+              <p>Use this for difficult IIT and NEET-style questions that need deep step-by-step explanation.</p>
+            </header>
+            <div class="output-panel" id="exam-output">
+              <span>Detailed exam solutions will appear here.</span>
+            </div>
+            <form class="chat-form bottom" data-chat="exam">
+              <input type="text" name="message" autocomplete="off" placeholder="Paste your IIT / NEET question..." />
+              <button type="submit">Explain</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="password-page" data-page-panel="password">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Security helper</p>
+              <h2>Password Generator</h2>
+              <p>Generate strong passwords instantly. Keep them private and save them only in a trusted password manager.</p>
+            </header>
+            <div class="password-box">
+              <output id="password-output">Click generate to create a password.</output>
+              <button id="generate-password" type="button">Generate Password</button>
+            </div>
+            <form class="chat-form bottom" data-chat="password">
+              <input type="text" name="message" autocomplete="off" placeholder="Ask for a password style..." />
+              <button type="submit">Ask</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="page" id="guide-page" data-page-panel="guide">
+          <div class="tool-page">
+            <header>
+              <p class="eyebrow">Start here</p>
+              <h2>Guide</h2>
+              <p>NOVA AI helps users choose the right workspace for chat, images, math, code, IIT / NEET practice, and passwords.</p>
+            </header>
+            <div class="guide-grid">
+              <article>
+                <h3>Creator</h3>
+                <dl class="creator-details">
+                  <div>
+                    <dt>Founder's Name</dt>
+                    <dd>D.Sreeraam</dd>
+                  </div>
+                  <div>
+                    <dt>Work</dt>
+                    <dd>Student</dd>
+                  </div>
+                  <div>
+                    <dt>Tools Used</dt>
+                    <dd>Codex</dd>
+                  </div>
+                  <div>
+                    <dt>Languages Used</dt>
+                    <dd>HTML, CSS, JavaScript</dd>
+                  </div>
+                  <div>
+                    <dt>Date Created NOVA AI</dt>
+                    <dd>18/6/2026 (18 June 2026)</dd>
+                  </div>
+                </dl>
+              </article>
+              <article>
+                <h3>How to Use</h3>
+                <p>Use Chat for normal questions. Use Math Solver for medium problems. Use IIT / NEET Help for very difficult exam questions.</p>
+              </article>
+              <article>
+                <h3>Next Upgrade</h3>
+                <p>Connect NOVA AI to a real AI API when you are ready to make live answers work online.</p>
+              </article>
+            </div>
+            <form class="chat-form bottom" data-chat="guide">
+              <input type="text" name="message" autocomplete="off" placeholder="Ask how to use NOVA AI..." />
+              <button type="submit">Guide Me</button>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
