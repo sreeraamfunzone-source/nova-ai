@@ -68,8 +68,8 @@ async function askNova(mode, message) {
 }
 
 function pollinationsImageUrl(prompt) {
-  const fullPrompt = `high quality detailed image, ${prompt}`;
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&nologo=true`;
+  const fullPrompt = `masterpiece, ultra detailed, high quality, sharp focus, beautiful lighting, ${prompt}`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&model=flux&enhance=true&nologo=true&private=true&seed=${Date.now()}`;
 }
 
 function appendGeneratedImage(panel, prompt, base64Image) {
@@ -219,7 +219,7 @@ document.querySelectorAll(".chat-form").forEach((form) => {
 
         if (type === "image") {
           const panel = document.getElementById("image-output");
-          appendGeneratedImage(panel, text, data.image);
+          appendGeneratedImage(panel, data.reply || text, data.image);
         }
       } catch (error) {
         const reply = buildToolReply(type, text);
