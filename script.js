@@ -1,242 +1,36 @@
-const pages = document.querySelectorAll("[data-page-panel]");
-const navButtons = document.querySelectorAll(".tool-button");
-
-const toolNames = {
-  image: "AI Image Generator",
-  math: "Complex Math Solver",
-  code: "Code Builder",
-  exam: "IIT / NEET Sums Help",
-  password: "Password Generator",
-  guide: "Guide",
-};
-
-function showPage(pageName) {
-  pages.forEach((page) => {
-    page.classList.toggle("active", page.dataset.pagePanel === pageName);
-  });
-
-  navButtons.forEach((button) => {
-    button.classList.toggle("active", button.dataset.page === pageName);
-  });
-
-  history.replaceState(null, "", `#${pageName}`);
-}
-
-function addMessage(container, role, text) {
-  const message = document.createElement("article");
-  message.className = `message ${role}`;
-  const paragraph = document.createElement("p");
-  paragraph.textContent = text;
-  message.append(paragraph);
-  container.append(message);
-  container.scrollTop = container.scrollHeight;
-}
-
-function localRouteHint(text) {
-  const lower = text.toLowerCase();
-  const hasAny = (words) => words.some((word) => new RegExp(`\\b${word}\\b`, "i").test(lower));
-  const veryHard = ["iit", "neet", "jee", "advanced", "narayana", "sri chaitanya", "olympiad"];
-  const math = ["math", "algebra", "trig", "trigonometry", "calculus", "geometry", "equation", "sum", "solve"];
-
-  if (hasAny(veryHard)) {
-    return "This looks like a hard exam-style question. IIT / NEET Sums Help is the best page for a detailed solution.";
-  }
-
-  if (hasAny(math)) {
-    return "This looks like a medium or above-average math question. Complex Math Solver is the best page for a clean solution path.";
-  }
-
-  return "";
-}
-
-async function askNova(mode, message) {
-  const response = await fetch("/.netlify/functions/nova-chat", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ mode, message }),
-  });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.error || "NOVA AI is not connected yet.");
-  }
-
-  return data;
-}
-
-function pollinationsImageUrl(prompt) {
-  const fullPrompt = `masterpiece, ultra detailed, high quality, sharp focus, beautiful lighting, ${prompt}`;
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?width=1024&height=1024&model=flux&enhance=true&nologo=true&private=true&seed=${Date.now()}`;
-}
-
-function appendGeneratedImage(panel, prompt, base64Image) {
-  const image = document.createElement("img");
-  image.alt = prompt;
-  image.src = base64Image ? `data:image/png;base64,${base64Image}` : pollinationsImageUrl(prompt);
-  image.className = "generated-image";
-  panel.append(image);
-}
-
-function homeReply(text) {
-  const lower = text.toLowerCase();
-  const hasAny = (words) => words.some((word) => new RegExp(`\\b${word}\\b`, "i").test(lower));
-  const veryHard = ["iit", "neet", "jee", "advanced", "narayana", "sri chaitanya", "olympiad"];
-  const math = ["math", "algebra", "trig", "trigonometry", "calculus", "geometry", "equation", "sum", "solve"];
-  const image = ["image", "picture", "photo", "poster", "logo", "art"];
-  const code = ["code", "website", "app", "python", "javascript", "html", "css"];
-
-  if (hasAny(veryHard)) {
-    return "This looks like a hard exam-style question. Click IIT / NEET Sums Help so NOVA can give a detailed step-by-step solution.";
-  }
-
-  if (hasAny(math)) {
-    return "This looks like a medium or above-average math question. Click Complex Math Solver for a clean solution path.";
-  }
-
-  if (hasAny(image)) {
-    return "For images, click AI Image Generator and describe the exact scene, style, colors, and details you want.";
-  }
-
-  if (hasAny(code)) {
-    return "For coding work, click Code Builder and explain what you want built, the language, and any features.";
-  }
-
-  return "I can help with that. In this first free version, I can guide you and route your question. The next upgrade is connecting a real AI API for live answers.";
-}
-
-function setPanelResult(id, title, text) {
-  const panel = document.getElementById(id);
-  panel.innerHTML = "";
-
-  const heading = document.createElement("p");
-  heading.className = "result-title";
-  heading.textContent = title;
-
-  const result = document.createElement("div");
-  result.className = "result-text";
-  result.textContent = text;
-
-  panel.append(heading, result);
-}
-
-function buildToolReply(type, input) {
-  if (type === "image") {
-    return {
-      title: "Image Prompt",
-      text: `Create a high-quality image of: ${input}\n\nStyle: sharp, detailed, balanced lighting, clean composition, realistic depth, and accurate subject details.`,
-    };
-  }
-
-  if (type === "math") {
-    return {
-      title: "Solution Plan",
-      text: `Question: ${input}\n\n1. Identify the given values and what must be found.\n2. Choose the right formula or concept.\n3. Substitute carefully.\n4. Simplify step by step.\n5. Check the final answer.\n\nFor the live solver, we will connect an AI model next.`,
-    };
-  }
-
-  if (type === "exam") {
-    return {
-      title: "Detailed Exam Approach",
-      text: `Question: ${input}\n\nStep 1: Read the question and mark the topic.\nStep 2: Write all known data.\nStep 3: Choose the fastest exam method.\nStep 4: Solve without skipping logic.\nStep 5: Verify units, options, or final conclusion.\n\nThis page is prepared for IIT / NEET-level AI solving in the next upgrade.`,
-    };
-  }
-
-  if (type === "guide") {
-    return {
-      title: "NOVA AI Guide",
-      text: `You asked: ${input}\n\nUse Chat for normal questions.\nUse Complex Math Solver for medium math.\nUse IIT / NEET Sums Help for difficult exam questions.\nUse Code Builder for programming.\nUse AI Image Generator for pictures.\nUse Password Generator for strong passwords.`,
-    };
-  }
-
-  if (type === "password") {
-    return {
-      title: "Password Advice",
-      text: `For "${input}", use a long password with uppercase, lowercase, numbers, and symbols. Avoid names, birthdays, phone numbers, and school names.`,
-    };
-  }
-
-  return {
-    title: "Code Draft",
-    text: `// Request: ${input}
-function novaAiFeature() {
-  return "This is where NOVA AI will generate exact code after the AI API is connected.";
-}
-
-console.log(novaAiFeature());`,
-  };
-}
-
-function generatePassword() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*";
-  const password = Array.from({ length: 18 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  document.getElementById("password-output").textContent = password;
-}
-
-navButtons.forEach((button) => {
-  button.addEventListener("click", () => showPage(button.dataset.page));
-});
-
-document.querySelectorAll(".chat-form").forEach((form) => {
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const input = form.elements.message;
-    const text = input.value.trim();
-
-    if (!text) return;
-
-    const type = form.dataset.chat;
-
-    if (type === "home") {
-      addMessage(document.getElementById("home-messages"), "user", text);
-      addMessage(document.getElementById("home-messages"), "assistant", "Thinking...");
-      const messages = document.querySelectorAll("#home-messages .assistant p");
-      const pending = messages[messages.length - 1];
-
-      try {
-        const data = await askNova(type, text);
-        const hint = localRouteHint(text);
-        pending.textContent = hint ? `${hint}\n\n${data.reply}` : data.reply;
-      } catch (error) {
-        pending.textContent = `${homeReply(text)}\n\nSetup note: ${error.message}`;
-      }
-    } else if (type === "code") {
-      document.getElementById("code-output").textContent = "NOVA AI is building...";
-      try {
-        const data = await askNova(type, text);
-        document.getElementById("code-output").textContent = data.reply;
-      } catch (error) {
-        const reply = buildToolReply(type, text);
-        document.getElementById("code-output").textContent = `${reply.text}\n\nSetup note: ${error.message}`;
-      }
-    } else {
-      setPanelResult(`${type}-output`, "NOVA AI", "Thinking...");
-      try {
-        const data = await askNova(type, text);
-        setPanelResult(`${type}-output`, toolNames[type] || "NOVA AI", data.reply);
-
-        if (type === "image") {
-          const panel = document.getElementById("image-output");
-          appendGeneratedImage(panel, data.reply || text, data.image);
-        }
-      } catch (error) {
-        const reply = buildToolReply(type, text);
-        setPanelResult(`${type}-output`, reply.title, `${reply.text}\n\nSetup note: ${error.message}`);
-
-        if (type === "image") {
-          const panel = document.getElementById("image-output");
-          appendGeneratedImage(panel, text);
-        }
-      }
-    }
-
-    input.value = "";
-  });
-});
-
-document.getElementById("generate-password").addEventListener("click", generatePassword);
-
-const initialPage = location.hash.replace("#", "") || "home";
-showPage(toolNames[initialPage] || initialPage === "home" ? initialPage : "home");
+const pages = document.querySelectorAll('[data-page-panel]');
+const buttons = document.querySelectorAll('.tool-button');
+const guestLimits = { home: 60, image: 10, math: 20, code: 20, exam: 15 };
+const tools = { home: 'Chat', image: 'AI Image Generator', math: 'Math Solver', code: 'Code Builder', exam: 'IIT / NEET Help', password: 'Password Generator' };
+const store = { get(key, fallback) { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } }, set(key, value) { localStorage.setItem(key, JSON.stringify(value)); } };
+const dateKey = () => new Date().toISOString().slice(0, 10);
+const account = () => store.get('nova-account', null);
+const usage = () => { const value = store.get('nova-usage', { day: dateKey(), tools: {} }); return value.day === dateKey() ? value : { day: dateKey(), tools: {} }; };
+function imageWindow() { const value = store.get('nova-image-window', { start: Date.now(), count: 0 }); return Date.now() - value.start >= 3600000 ? { start: Date.now(), count: 0 } : value; }
+function remaining(mode) { if (account()) { if (mode !== 'image') return 'Unlimited'; const current = imageWindow(); return current.count < 100 ? `${100 - current.count} images before cooldown` : `${Math.ceil((current.start + 3600000 - Date.now()) / 60000)} min cooldown`; } return guestLimits[mode] == null ? 'Unlimited' : `${Math.max(0, guestLimits[mode] - (usage().tools[mode] || 0))} left`; }
+function allow(mode) { if (mode === 'password') return true; if (account()) { if (mode !== 'image') return true; const current = imageWindow(); if (current.count >= 100) return false; current.count += 1; store.set('nova-image-window', current); return true; } const current = usage(); if ((current.tools[mode] || 0) >= guestLimits[mode]) return false; current.tools[mode] = (current.tools[mode] || 0) + 1; store.set('nova-usage', current); return true; }
+function updateAccountUi() { const user = account(); document.getElementById('sign-in-button').textContent = user ? 'Sign out' : 'Sign in'; document.getElementById('plan-badge').textContent = user?.plan || 'FREE'; document.getElementById('topbar-usage').textContent = user ? `${user.name} · FREE plan` : `Guest · Chat ${remaining('home')}`; document.getElementById('home-usage-note').textContent = user ? `Signed in as ${user.name}. Chat, Math, Code Builder and IIT / NEET Help are unlimited on FREE; Image: ${remaining('image')}.` : `Guest limits: Chat ${remaining('home')}, Image ${remaining('image')}, Math ${remaining('math')}, Code ${remaining('code')}, IIT / NEET ${remaining('exam')}. Sign in for more.`; }
+function memory(mode) { return store.get(`nova-memory-${mode}`, []); }
+function remember(mode, role, text) { store.set(`nova-memory-${mode}`, [...memory(mode), { role, text }].slice(-10)); }
+function addHistory(mode, request, reply) { if (!account()) return; const entries = store.get('nova-history', []); entries.unshift({ mode, request, reply, at: new Date().toISOString() }); store.set('nova-history', entries.slice(0, 300)); }
+function showPage(name) { const page = [...pages].some((item) => item.dataset.pagePanel === name) ? name : 'home'; pages.forEach((item) => item.classList.toggle('active', item.dataset.pagePanel === page)); buttons.forEach((item) => item.classList.toggle('active', item.dataset.page === page)); history.replaceState(null, '', `#${page}`); if (page === 'history') renderHistory(); if (page === 'market') loadMarket(); }
+function message(container, role, text) { const article = document.createElement('article'); article.className = `message ${role}`; const p = document.createElement('p'); p.textContent = text; article.append(p); container.append(article); container.scrollTop = container.scrollHeight; return p; }
+function setResult(id, title, text) { const panel = document.getElementById(id); panel.innerHTML = `<p class="result-title"></p><div class="result-text"></div>`; panel.querySelector('.result-title').textContent = title; panel.querySelector('.result-text').textContent = text; }
+async function ask(mode, text) { const response = await fetch('/.netlify/functions/nova-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, message: text, context: memory(mode), user: account()?.name || 'Guest' }) }); const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.error || 'NOVA is not connected.'); return data; }
+function fallback(mode, text) { const answers = { image: `High-quality detailed image of ${text}, sharp focus, balanced lighting, complete composition.`, math: `Question: ${text}\n\n1. List the given values.\n2. Pick the relevant formula.\n3. Solve carefully.\n4. Check the answer.`, exam: `Question: ${text}\n\nIdentify the concept, list the known data, choose the fastest valid method, show each step and check the final result.`, code: `// ${text}\n// Add a Netlify AI API key for NOVA to generate the complete implementation.\nfunction buildFeature() { return 'NOVA Code Builder is ready.'; }\nconsole.log(buildFeature());` }; return answers[mode] || 'Connect an AI provider in Netlify for live answers.'; }
+function imageUrl(prompt) { return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${Date.now()}`; }
+function addImage(panel, prompt, base64) { const img = document.createElement('img'); img.className = 'generated-image'; img.alt = prompt; img.src = base64 ? `data:image/png;base64,${base64}` : imageUrl(prompt); panel.append(img); }
+buttons.forEach((button) => button.addEventListener('click', () => showPage(button.dataset.page)));
+document.querySelectorAll('.chat-form').forEach((form) => form.addEventListener('submit', async (event) => { event.preventDefault(); const mode = form.dataset.chat; const input = form.elements.message; const text = input.value.trim(); if (!text) return; if (!allow(mode)) { const signedIn = account(); alert(signedIn ? 'Your 100 signed-in FREE images are used. Please wait for the one-hour cooldown.' : `Guest ${tools[mode]} limit reached. Sign in to continue.`); updateAccountUi(); return; } const request = mode === 'code' ? `${text}\n\nBuild target: ${document.getElementById('code-type').value}. Language: ${document.getElementById('code-language').value}. Give exact complete runnable code, filename headings, error handling, and short setup instructions. Use the previous section context when relevant.` : text; remember(mode, 'user', text); input.value = ''; let pending; if (mode === 'home') { message(document.getElementById('home-messages'), 'user', text); pending = message(document.getElementById('home-messages'), 'assistant', 'Thinking…'); } else if (mode === 'code') document.getElementById('code-output').textContent = 'NOVA is building…'; else setResult(`${mode}-output`, 'NOVA AI', 'Thinking…'); try { const data = await ask(mode, request); const reply = data.reply || fallback(mode, text); remember(mode, 'assistant', reply); addHistory(mode, text, reply); if (mode === 'home') { pending.textContent = reply; speak(reply); } else if (mode === 'code') document.getElementById('code-output').textContent = reply; else { setResult(`${mode}-output`, tools[mode], reply); if (mode === 'image') addImage(document.getElementById('image-output'), reply, data.image); } } catch (error) { const reply = fallback(mode, text); remember(mode, 'assistant', reply); addHistory(mode, text, reply); if (mode === 'home') pending.textContent = `${reply}\n\nSetup note: ${error.message}`; else if (mode === 'code') document.getElementById('code-output').textContent = reply; else { setResult(`${mode}-output`, tools[mode], `${reply}\n\nSetup note: ${error.message}`); if (mode === 'image') addImage(document.getElementById('image-output'), text); } } updateAccountUi(); }));
+function renderHistory() { const output = document.getElementById('history-output'); const detail = document.getElementById('history-detail'); output.innerHTML = ''; detail.innerHTML = ''; if (!account()) { output.innerHTML = '<article class="history-item"><p>History is available after signing in. Your guest requests are not saved in History.</p><button class="history-date" id="history-signin">Sign in</button></article>'; document.getElementById('history-signin').addEventListener('click', () => document.getElementById('sign-in-dialog').showModal()); return; } const entries = store.get('nova-history', []); const dates = [...new Set(entries.map((item) => item.at.slice(0, 10)))]; if (!dates.length) { output.innerHTML = '<article class="history-item"><p>No signed-in history yet.</p></article>'; return; } dates.forEach((date) => { const button = document.createElement('button'); button.className = 'history-date'; button.textContent = new Date(`${date}T12:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }); button.addEventListener('click', () => renderHistorySections(date)); output.append(button); }); }
+function renderHistorySections(date) { const detail = document.getElementById('history-detail'); const entries = store.get('nova-history', []).filter((item) => item.at.startsWith(date)); const modes = [...new Set(entries.map((item) => item.mode))]; detail.innerHTML = ''; modes.forEach((mode) => { const button = document.createElement('button'); button.className = 'history-section'; button.textContent = tools[mode]; button.addEventListener('click', () => { detail.querySelectorAll('.history-item').forEach((item) => item.remove()); entries.filter((item) => item.mode === mode).forEach((item) => { const card = document.createElement('article'); card.className = 'history-item'; card.innerHTML = `<small>${new Date(item.at).toLocaleTimeString()}</small><p><strong>You:</strong> ${escapeHtml(item.request)}</p><p><strong>NOVA:</strong> ${escapeHtml(item.reply)}</p>`; detail.append(card); }); }); detail.append(button); }); }
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+document.getElementById('clear-history').addEventListener('click', () => { if (!account()) return; store.set('nova-history', []); ['home','image','math','code','exam'].forEach((mode) => localStorage.removeItem(`nova-memory-${mode}`)); renderHistory(); });
+async function loadMarket() { const output = document.getElementById('market-output'); try { output.innerHTML = '<span>Refreshing live information…</span>'; const city = document.getElementById('market-city').value.trim() || 'Chennai'; const response = await fetch(`/.netlify/functions/nova-market?city=${encodeURIComponent(city)}`); const data = await response.json(); if (!response.ok) throw new Error(data.error); output.innerHTML = ''; [...data.markets, data.weather, data.time].forEach((item) => { const card = document.createElement('article'); card.className = 'market-card'; card.innerHTML = `<small>${item.label}</small><strong>${item.name}</strong><span class="market-price">${item.price}</span><span class="${item.change >= 0 ? 'up' : 'down'}">${item.changeText || ''}</span>`; output.append(card); }); document.getElementById('market-updated').textContent = `Updated ${new Date().toLocaleTimeString()}`; } catch { output.innerHTML = '<article class="history-item"><p>Live information is unavailable right now. Try refresh again.</p></article>'; } }
+document.getElementById('refresh-market').addEventListener('click', loadMarket);
+document.getElementById('generate-password').addEventListener('click', () => { const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%^&*'; document.getElementById('password-output').textContent = Array.from({ length: 18 }, () => chars[Math.floor(Math.random() * chars.length)]).join(''); });
+document.getElementById('copy-code').addEventListener('click', async () => { await navigator.clipboard.writeText(document.getElementById('code-output').textContent); }); document.getElementById('download-code').addEventListener('click', () => { const blob = new Blob([document.getElementById('code-output').textContent], { type: 'text/plain' }); const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'nova-build.txt' }); link.click(); URL.revokeObjectURL(link.href); });
+const dialog = document.getElementById('sign-in-dialog'); document.getElementById('sign-in-button').addEventListener('click', () => { if (account()) { localStorage.removeItem('nova-account'); updateAccountUi(); } else dialog.showModal(); }); document.querySelectorAll('.provider-button').forEach((button) => button.addEventListener('click', () => { document.getElementById('demo-name').value = `${button.dataset.provider} user`; document.getElementById('demo-name').focus(); })); document.getElementById('complete-sign-in').addEventListener('click', (event) => { const name = document.getElementById('demo-name').value.trim(); if (!name) { event.preventDefault(); return; } store.set('nova-account', { name, plan: 'FREE', signedInAt: new Date().toISOString() }); updateAccountUi(); });
+function speak(text) { if ('speechSynthesis' in window) { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance(text)); } }
+document.querySelector('[data-voice-input]').addEventListener('click', () => { const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition; const status = document.getElementById('voice-status'); if (!Recognition) { status.textContent = 'Voice input needs a recent Chrome or Edge browser.'; return; } const recognition = new Recognition(); recognition.lang = 'en-IN'; status.textContent = 'Listening…'; recognition.start(); recognition.onresult = (event) => { document.querySelector('[data-chat="home"] input').value = event.results[0][0].transcript; status.textContent = 'Voice captured. Press Send and NOVA will answer with text and voice.'; }; recognition.onerror = () => status.textContent = 'I could not hear that. Please try again.'; });
+updateAccountUi(); showPage(location.hash.replace('#', '') || 'home');
